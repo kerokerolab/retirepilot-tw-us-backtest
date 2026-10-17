@@ -3163,20 +3163,32 @@
           }
         } catch (e) {}
 
-        const st = STOCK_DB.find(s => s.ticker === histTicker) || STOCK_DB[0];
-        const raw20 = getRaw20YrBaseSeries(st, true);
-        const sYear = parseInt(startYM.split("-")[0]) || 2006;
-        const eYear = parseInt(endYM.split("-")[0]) || 2025;
-        histMonthlyReturns = [];
-        for (let y = Math.max(2006, sYear); y <= Math.min(2025, eYear); y++) {
-          const yIdx = y - 2006;
-          const annRet = (raw20.priceRets[yIdx] || 0) + (raw20.divYields[yIdx] || 0);
-          const mRetBase = Math.pow(Math.max(0.05, 1 + annRet), 1 / 12) - 1;
-          for (let m = 1; m <= 12; m++) {
-            const ym = `${y}-${String(m).padStart(2, "0")}`;
-            if (ym >= startYM && ym <= endYM) {
-              const seasonalWave = (m % 3 === 0 ? -0.008 : (m % 2 === 0 ? 0.006 : -0.001));
-              histMonthlyReturns.push({ year_month: ym, total_return: mRetBase + seasonalWave });
+        if (typeof window.getStaticMonthlyList === "function") {
+          const staticM = window.getStaticMonthlyList(histTicker, true, "whitelist_proxy")
+            .filter(m => m.year_month >= startYM && m.year_month <= endYM);
+          if (staticM.length > 0) {
+            histMonthlyReturns = staticM.map(m => ({
+              year_month: m.year_month,
+              total_return: m.start_price > 0 ? ((m.end_price + m.div_cash * (1 - (m.tax_rate || 0))) / m.start_price) - 1.0 : 0.0
+            }));
+          }
+        }
+        if (!histMonthlyReturns || histMonthlyReturns.length === 0) {
+          const st = STOCK_DB.find(s => s.ticker === histTicker) || STOCK_DB[0];
+          const raw20 = getRaw20YrBaseSeries(st, true);
+          const sYear = parseInt(startYM.split("-")[0]) || 2006;
+          const eYear = parseInt(endYM.split("-")[0]) || 2025;
+          histMonthlyReturns = [];
+          for (let y = Math.max(2006, sYear); y <= Math.min(2025, eYear); y++) {
+            const yIdx = y - 2006;
+            const annRet = (raw20.priceRets[yIdx] || 0) + (raw20.divYields[yIdx] || 0);
+            const mRetBase = Math.pow(Math.max(0.05, 1 + annRet), 1 / 12) - 1;
+            for (let m = 1; m <= 12; m++) {
+              const ym = `${y}-${String(m).padStart(2, "0")}`;
+              if (ym >= startYM && ym <= endYM) {
+                const seasonalWave = (m % 3 === 0 ? -0.008 : (m % 2 === 0 ? 0.006 : -0.001));
+                histMonthlyReturns.push({ year_month: ym, total_return: mRetBase + seasonalWave });
+              }
             }
           }
         }
