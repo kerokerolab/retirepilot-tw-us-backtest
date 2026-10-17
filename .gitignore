@@ -1,0 +1,20 @@
+# macOS & Editor
+.DS_Store
+.vscode/
+.idea/
+
+# Python virtual environments & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+path/
+
+# 排除 188MB 原始日K資料庫（超過 GitHub 100MB 限制）
+# 雲端部署會自動使用隨附之 5.1MB 壓縮種子檔 backend_mvp/retirepilot_cloud_seed.sqlite.gz 解壓還原
+backend_mvp/retirepilot_mvp.sqlite
+backend_mvp/*.sqlite-journal
+backend_mvp/*.sqlite-wal
+backend_mvp/*.sqlite-shm
