@@ -3354,10 +3354,13 @@
           const staticM = window.getStaticMonthlyList(histTicker, true, "whitelist_proxy")
             .filter(m => m.year_month >= startYM && m.year_month <= endYM);
           if (staticM.length > 0) {
-            histMonthlyReturns = staticM.map(m => ({
-              year_month: m.year_month,
-              total_return: m.start_price > 0 ? ((m.end_price + m.div_cash * (1 - (m.tax_rate || 0))) / m.start_price) - 1.0 : 0.0
-            }));
+            histMonthlyReturns = staticM.map((m, idx) => {
+              const baseP = (idx > 0 && staticM[idx - 1].end_price > 0) ? staticM[idx - 1].end_price : m.start_price;
+              return {
+                year_month: m.year_month,
+                total_return: baseP > 0 ? ((m.end_price + m.div_cash * (1 - (m.tax_rate || 0))) / baseP) - 1.0 : 0.0
+              };
+            });
           }
         }
         if (!histMonthlyReturns || histMonthlyReturns.length === 0) {

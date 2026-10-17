@@ -3354,10 +3354,13 @@
           const staticM = window.getStaticMonthlyList(histTicker, true, "whitelist_proxy")
             .filter(m => m.year_month >= startYM && m.year_month <= endYM);
           if (staticM.length > 0) {
-            histMonthlyReturns = staticM.map(m => ({
-              year_month: m.year_month,
-              total_return: m.start_price > 0 ? ((m.end_price + m.div_cash * (1 - (m.tax_rate || 0))) / m.start_price) - 1.0 : 0.0
-            }));
+            histMonthlyReturns = staticM.map((m, idx) => {
+              const baseP = (idx > 0 && staticM[idx - 1].end_price > 0) ? staticM[idx - 1].end_price : m.start_price;
+              return {
+                year_month: m.year_month,
+                total_return: baseP > 0 ? ((m.end_price + m.div_cash * (1 - (m.tax_rate || 0))) / baseP) - 1.0 : 0.0
+              };
+            });
           }
         }
         if (!histMonthlyReturns || histMonthlyReturns.length === 0) {
@@ -4863,15 +4866,17 @@
           const synth = [];
           for (let i = missing.length - 1; i >= 0; i--) {
             const pm = missing[i];
-            const pRet = pm.start_price > 0 ? (pm.end_price / pm.start_price) - 1.0 : 0.0;
+            const baseP = (i > 0 && missing[i - 1].end_price > 0) ? missing[i - 1].end_price : pm.start_price;
+            const pDivNet = (pm.div_cash || 0) * (1.0 - (pm.tax_rate || 0));
+            const pRet = baseP > 0 ? ((pm.end_price + pDivNet) / baseP) - 1.0 : 0.0;
             const synthRet = Math.max(-0.95, pRet * proxyLev);
             const pStart = (1.0 + synthRet) > 0 ? currPEnd / (1.0 + synthRet) : currPEnd;
             synth.push({
               year_month: pm.year_month,
               year: pm.year,
               month: pm.month,
-              start_price: Math.round(pStart * 100) / 100,
-              end_price: Math.round(currPEnd * 100) / 100,
+              start_price: Math.round(pStart * 10000) / 10000,
+              end_price: Math.round(currPEnd * 10000) / 10000,
               div_cash: 0.0,
               tax_rate: 0.0
             });

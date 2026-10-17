@@ -211,10 +211,12 @@ def load_monthly_data_from_sqlite(
             div_df["ym"] = div_df["ex_date"].str.slice(0, 7)
             div_map = div_df.groupby("ym")["cash_dividend"].sum().to_dict()
 
+        prev_end_p = None
         for _, row in monthly_grp.iterrows():
             ym = row["ym"]
-            p_start = float(row["start_price"])
+            p_start = float(prev_end_p) if prev_end_p is not None else float(row["start_price"])
             p_end = float(row["end_price"])
+            prev_end_p = p_end
             d_cash = float(div_map.get(ym, 0.0))
             result.append({
                 "year_month": ym,
@@ -237,15 +239,16 @@ def load_monthly_data_from_sqlite(
                 synth_months = []
                 curr_p_end = anchor_price
                 for pm in reversed(missing_proxy_months):
-                    p_ret = (pm["end_price"] / pm["start_price"]) - 1.0 if pm["start_price"] > 0 else 0.0
+                    p_div_net = pm.get("div_cash", 0.0) * (1.0 - pm.get("tax_rate", 0.0))
+                    p_ret = ((pm["end_price"] + p_div_net) / pm["start_price"]) - 1.0 if pm["start_price"] > 0 else 0.0
                     synth_ret = max(-0.95, p_ret * proxy_lev)
                     p_start = curr_p_end / (1.0 + synth_ret) if (1.0 + synth_ret) > 0 else curr_p_end
                     synth_months.append({
                         "year_month": pm["year_month"],
                         "year": pm["year"],
                         "month": pm["month"],
-                        "start_price": round(p_start, 2),
-                        "end_price": round(curr_p_end, 2),
+                        "start_price": round(p_start, 4),
+                        "end_price": round(curr_p_end, 4),
                         "div_cash": 0.0,
                         "tax_rate": 0.0,
                     })
@@ -539,8 +542,8 @@ def api_loan_simulate(req: LoanSimRequest):
         filtered = [m for m in raw_m if start_ym <= m["year_month"] <= end_ym]
         if filtered:
             hist_monthly = []
-            for m in filtered:
-                p_start = m["start_price"]
+            for idx, m in enumerate(filtered):
+                p_start = filtered[idx - 1]["end_price"] if (idx > 0 and filtered[idx - 1]["end_price"] > 0) else m["start_price"]
                 p_end = m["end_price"]
                 d_net = m["div_cash"] * (1.0 - (m["tax_rate"] if req.apply_us_tax else 0.0))
                 tot_ret = ((p_end + d_net) / p_start - 1.0) if p_start > 0 else 0.0
