@@ -3295,6 +3295,8 @@
       const refiInterval = Math.max(12, parseInt(document.getElementById("loan-refiInterval")?.value) || 48);
       const postPayoffDCA = document.getElementById("loan-postPayoffDCA")?.value === "yes";
       let totalMonths = Math.max(12, parseInt(document.getElementById("loan-totalMonths")?.value) || 240);
+      const reqTotalMonths = totalMonths;
+      let isDataTruncated = false;
 
       const returnMode = document.getElementById("loan-returnMode")?.value || "fixed_cagr";
       const expAnnualRet = (parseFloat(document.getElementById("loan-expReturn")?.value) || 14.0) / 100;
@@ -3338,8 +3340,11 @@
           if (apiRes.ok) {
             const apiData = await apiRes.json();
             if (apiData && apiData.used_historical_sqlite) {
+              const apiTrunc = apiData.summary && apiData.summary.total_months < reqTotalMonths;
+              const loanMeta = { L0, N, annualRate, graceM, scheduleType, repaySource, eqRatioRaw, refiEnabled, refiInterval, returnMode, expAnnualRet, histTicker, reqTotalMonths, isDataTruncated: apiTrunc, usedSQLite: true };
               lastLoanSimResult = apiData;
-              renderLoanUI(apiData, { L0, N, annualRate, graceM, scheduleType, repaySource, eqRatioRaw, refiEnabled, refiInterval, returnMode, expAnnualRet, histTicker, usedSQLite: true });
+              lastLoanSimMeta = loanMeta;
+              renderLoanUI(apiData, loanMeta);
               return;
             }
           }
@@ -3374,8 +3379,6 @@
             }
           }
         }
-        const reqTotalMonths = totalMonths;
-        let isDataTruncated = false;
         if (histMonthlyReturns.length > 0) {
           if (histMonthlyReturns.length < totalMonths) {
             isDataTruncated = true;
