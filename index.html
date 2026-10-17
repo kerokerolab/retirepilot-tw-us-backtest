@@ -2449,6 +2449,7 @@
     let loanInjectionEnabled = false;
     let lastGoalSeekSolutions = { saveRate: 25, portReturn: 10.8, retireAge: 60, initCap: 500000 };
     let lastLoanSimResult = null;
+    let lastLoanSimMeta = null;
     let lastLoanCSVRows = [];
 
     function onRetireSpendInput() {
@@ -3373,8 +3374,13 @@
             }
           }
         }
+        const reqTotalMonths = totalMonths;
+        let isDataTruncated = false;
         if (histMonthlyReturns.length > 0) {
-          totalMonths = Math.min(totalMonths, histMonthlyReturns.length);
+          if (histMonthlyReturns.length < totalMonths) {
+            isDataTruncated = true;
+            totalMonths = histMonthlyReturns.length;
+          }
         }
       }
 
@@ -3575,6 +3581,8 @@
           loan_amount: Math.round(L0),
           monthly_pmt: Math.round(firstPmt),
           total_months: totalMonths,
+          requested_months: reqTotalMonths,
+          is_data_truncated: isDataTruncated,
           final_etf_value: Math.round(etfVal),
           final_cash_pool: Math.round(cashPool),
           final_gross_asset: totalAssetSeries[totalAssetSeries.length - 1],
@@ -3594,8 +3602,10 @@
         monthly_records: monthlyRecords
       };
 
+      const loanMeta = { L0, N, annualRate, graceM, scheduleType, repaySource, eqRatioRaw, refiEnabled, refiInterval, returnMode, expAnnualRet, histTicker, reqTotalMonths, isDataTruncated, usedSQLite: false };
       lastLoanSimResult = simData;
-      renderLoanUI(simData, { L0, N, annualRate, graceM, scheduleType, repaySource, eqRatioRaw, refiEnabled, refiInterval, returnMode, expAnnualRet, histTicker, usedSQLite: false });
+      lastLoanSimMeta = loanMeta;
+      renderLoanUI(simData, loanMeta);
     }
 
     function renderLoanUI(data, meta) {
@@ -3655,8 +3665,23 @@
       } else {
         diagBox.classList.add("success");
         const zeroSellCycle = data.cycle_milestones.find(c => c.forced_sell === 0);
-        diagTitle.innerText = `🚀 股票自償期滿結算：在外部薪資「0 貼錢」條件下，憑空滾存出實質淨資產 ${fmtTWD(s.final_net_equity)}！`;
-        diagDesc.innerText = `期初貸款 ${fmtTWD(meta.L0)}，每月應繳本息 NT$ ${fmtNum(s.monthly_pmt)} 全數由內部現金池與股票自償支付。${zeroSellCycle ? `隨著總資金池增長，於第 ${zeroSellCycle.cycle} 次循環達成「自償黃金交叉」（期初現金池已大於週期總本息，達成完全不賣股撐過週期）。` : ''}您可點擊左下方按鈕將此實質淨資產一鍵帶入「頁籤 1」退休規劃中。`;
+        const debtPaidOff = s.final_remaining_debt <= 1;
+        const isTrunc = s.is_data_truncated || (meta.reqTotalMonths && s.total_months < meta.reqTotalMonths);
+        diagTitle.innerText = debtPaidOff
+          ? `🚀 股票自償期滿結算：在外部薪資「0 貼錢」條件下，本金全額結清！淨資產達 ${fmtTWD(s.final_net_equity)}！`
+          : `🚀 股票自償階段結算：外部「0 貼錢」下，扣除未償負債後實質淨資產達 ${fmtTWD(s.final_net_equity)}！`;
+        
+        let desc = `期初貸款 ${fmtTWD(meta.L0)}，每月應繳本息 NT$ ${fmtNum(s.monthly_pmt)} 全數由內部現金池與股票自償支付。`;
+        if (isTrunc) {
+          desc += `<br><span style="color:#d97706; font-weight:600;">💡 歷史數據長度提示：所選標的在設定區間內歷史月 K 僅 ${s.total_months} 個月（約 ${(s.total_months / 12).toFixed(1)} 年），小於設定之總期數 ${meta.reqTotalMonths || 240} 期。模擬於歷史終點（第 ${(s.total_months / 12).toFixed(1)} 年底）結算，此時 240 期房貸尚有 ${meta.N - s.total_months} 期未到期，因此期末仍有未償本金餘額 NT$ ${fmtNum(s.final_remaining_debt)}。</span>`;
+        } else if (debtPaidOff) {
+          desc += ` 滿 20 年（240 期）房貸本金已完全攤還歸零（未償負債 NT$ 0 元）。`;
+        }
+        if (zeroSellCycle) {
+          desc += ` 隨著總資金池增長，於第 ${zeroSellCycle.cycle} 次循環達成「自償黃金交叉」（期初現金池已大於週期總本息，達成完全不賣股撐過週期）。`;
+        }
+        desc += ` 您可點擊左下方按鈕將此實質淨資產一鍵帶入「頁籤 1」退休規劃中。`;
+        diagDesc.innerHTML = desc;
       }
 
       const msBody = document.getElementById("loan-milestone-tbody");
@@ -3737,15 +3762,26 @@
 
           const tr = document.createElement("tr");
           if (hasRefi) tr.className = "retire-row";
+          let intPrinHtml = `${fmtNum(sumInt)} / ${fmtNum(sumPrin)}`;
+          if (sumPrin === 0 && (typeof lastLoanSimMeta !== "undefined" && lastLoanSimMeta && yrNum * 12 <= lastLoanSimMeta.graceM)) {
+            intPrinHtml = `${fmtNum(sumInt)} / 0 <span class="badge badge-amber" style="font-size:9.5px; padding:1px 5px;">寬限期只繳息</span>`;
+          }
+          let debtHtml = `NT$ ${fmtNum(lastR.remaining_debt)}`;
+          if (lastR.remaining_debt <= 1) {
+            debtHtml = '<span style="color:#059669; font-weight:700;">NT$ 0 (結清)</span>';
+          } else if (i + 12 >= recs.length && typeof lastLoanSimMeta !== "undefined" && lastLoanSimMeta && recs.length < lastLoanSimMeta.N) {
+            debtHtml = `NT$ ${fmtNum(lastR.remaining_debt)} <span class="badge badge-amber" style="font-size:9.5px; padding:1px 5px;">未到期</span>`;
+          }
+
           tr.innerHTML = `
             <td><strong>第 ${yrNum} 年底</strong> (${lastR.label}) ${hasRefi ? '<span class="badge badge-purple" style="font-size:10px;">借新還舊重平衡</span>' : ''}</td>
             <td>NT$ ${fmtNum(sumPmt)}</td>
-            <td style="font-size:11.5px; color:#64748b;">${fmtNum(sumInt)} / ${fmtNum(sumPrin)}</td>
+            <td style="font-size:11.5px; color:#64748b;">${intPrinHtml}</td>
             <td>${sumExt > 0 ? "NT$ " + fmtNum(sumExt) : "-"}</td>
             <td style="color:#d97706;">${sumSell > 0 ? "NT$ " + fmtNum(sumSell) : "-"}</td>
             <td>NT$ ${fmtNum(lastR.cash_pool)}</td>
             <td style="color:var(--primary); font-weight:600;">NT$ ${fmtNum(lastR.etf_value)}</td>
-            <td style="color:#e11d48;">NT$ ${fmtNum(lastR.remaining_debt)}</td>
+            <td style="color:#e11d48;">${debtHtml}</td>
             <td style="color:#059669; font-weight:700;">NT$ ${fmtNum(lastR.net_equity)}</td>
           `;
           tbody.appendChild(tr);
