@@ -121,30 +121,206 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     }
 
+    html, body {
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100vw;
+    }
+
     .container {
-      max-width: 1400px;
-      margin: 24px auto;
+      max-width: 1440px;
+      width: 100%;
+      margin: 22px auto;
       padding: 0 20px;
     }
 
     .tab-pane {
       display: none;
+      width: 100%;
+      min-width: 0;
     }
 
     .tab-pane.active {
       display: block;
     }
 
+    /* 關鍵修復：第二欄使用 minmax(0, 1fr)，並強制所有 Grid 子元素 min-width: 0，徹底防止表格與 Canvas 撐破桌機螢幕寬度 */
     .layout-grid {
       display: grid;
-      grid-template-columns: 400px 1fr;
-      gap: 22px;
+      grid-template-columns: minmax(320px, 385px) minmax(0, 1fr);
+      gap: 20px;
       align-items: start;
+      width: 100%;
     }
 
-    @media (max-width: 1080px) {
+    .layout-grid > *,
+    .kpi-grid > *,
+    .form-row > *,
+    .preset-grid > *,
+    .arch-grid > *,
+    .gs-controls-grid > *,
+    .gs-solutions-grid > *,
+    .card {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .gs-controls-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr 1.2fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .gs-solutions-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .expense-item-card {
+      background: var(--bg-subtle);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .expense-row-top {
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr) 28px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .expense-row-bottom {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      padding-left: 28px;
+    }
+
+    @media (max-width: 1240px) {
+      .gs-controls-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .gs-solutions-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+    }
+
+    @media (max-width: 1024px) {
       .layout-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .topbar {
+        position: relative;
+        padding: 14px 16px;
+        gap: 12px;
+      }
+      .brand-title h1 {
+        font-size: 16.5px;
+        line-height: 1.35;
+      }
+      .brand-title p {
+        font-size: 11.5px;
+        line-height: 1.4;
+      }
+      .nav-tabs {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        padding: 6px;
+      }
+      .nav-tab {
+        padding: 9px 8px;
+        font-size: 12.5px;
+        text-align: center;
+        white-space: normal;
+        line-height: 1.3;
+      }
+      .container {
+        margin: 14px auto;
+        padding: 0 12px;
+      }
+      .card {
+        padding: 14px;
+        margin-bottom: 14px;
+        border-radius: 12px;
+      }
+      .card-header {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .card-title {
+        font-size: 15px;
+        line-height: 1.4;
+      }
+      .chart-wrapper {
+        height: 290px;
+      }
+      .chart-legend {
+        gap: 10px;
+        font-size: 11.5px;
+        justify-content: flex-start;
+      }
+      .kpi-value {
+        font-size: 19px;
+        word-break: break-word;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .form-row,
+      .preset-grid,
+      .gs-controls-grid,
+      .gs-solutions-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 10px;
+      }
+      .preset-btn[style*="span 2"] {
+        grid-column: span 1 !important;
+      }
+      .input-box, select {
+        font-size: 16px; /* 防止手機瀏覽器點擊輸入框時自動放大畫面 */
+        padding: 9px 11px;
+      }
+      .form-group label {
+        font-size: 13.5px;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .expense-row-bottom {
+        padding-left: 0;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      }
+      .portfolio-row {
+        grid-template-columns: minmax(0, 1fr) 78px 30px;
+      }
+      table.data-table th,
+      table.data-table td {
+        padding: 8px 9px;
+        font-size: 12px;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .nav-tabs {
         grid-template-columns: 1fr;
+      }
+      .kpi-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
       }
     }
 
@@ -942,7 +1118,7 @@
               <span class="badge badge-blue" id="gs-status-badge">即時逆向求解</span>
             </div>
 
-            <div class="form-row" style="grid-template-columns: 1.3fr 1fr 1.2fr; gap:10px; margin-bottom:10px;">
+            <div class="gs-controls-grid">
               <div class="form-group" style="margin-bottom:0;">
                 <label>1. 選擇要綁定鎖定的退休目標</label>
                 <select id="gs-targetMode" class="input-box" onchange="onGoalSeekModeChange()">
@@ -969,7 +1145,7 @@
               正在計算勞保＋勞退折抵與自籌缺口...
             </div>
 
-            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;" id="gs-solutions-grid">
+            <div class="gs-solutions-grid" id="gs-solutions-grid">
               <div style="background:#fff; border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
                 <div style="font-size:11.5px; color:var(--text-muted); font-weight:600;">連動反推 ①：每月儲蓄率</div>
                 <div style="font-size:16px; font-weight:800; color:var(--primary); margin:4px 0;" id="gs-sol-saveRate">--</div>
@@ -1841,19 +2017,24 @@
       }
 
       listEl.innerHTML = extraExpenses.map((it, idx) => `
-        <div style="display:grid; grid-template-columns:22px 1fr 90px 75px 30px; gap:6px; align-items:center; background:var(--bg-subtle); padding:6px 8px; border-radius:8px; font-size:12px; border:1px solid var(--border);">
-          <input type="checkbox" ${it.enabled ? "checked" : ""} onchange="toggleExtraExpense(${it.id})" title="啟用/停用" />
-          <input type="text" class="input-box" style="padding:4px 6px; font-size:12px;" value="${it.name}" oninput="updateExtraExpense(${it.id}, 'name', this.value)" placeholder="花費名稱" />
-          <div style="display:flex; align-items:center; gap:2px;">
-            <input type="number" class="input-box" style="padding:4px 4px; font-size:12px; text-align:right;" value="${it.amount}" step="10000" oninput="updateExtraExpense(${it.id}, 'amount', this.value)" />
-            <span style="font-size:11px; color:var(--text-muted);">元</span>
+        <div class="expense-item-card">
+          <div class="expense-row-top">
+            <input type="checkbox" ${it.enabled ? "checked" : ""} onchange="toggleExtraExpense(${it.id})" title="啟用/停用" style="width:16px; height:16px; cursor:pointer;" />
+            <input type="text" class="input-box" style="padding:5px 8px; font-size:13px; font-weight:600;" value="${it.name}" oninput="updateExtraExpense(${it.id}, 'name', this.value)" placeholder="花費名稱" />
+            <button class="remove-btn" style="width:26px; height:26px; line-height:24px; font-size:13px;" onclick="removeExtraExpense(${it.id})" title="刪除項目">×</button>
           </div>
-          <div style="display:flex; align-items:center; gap:2px;">
-            <span style="font-size:11px; color:var(--text-muted);">每</span>
-            <input type="number" class="input-box" style="padding:4px 3px; font-size:12px; text-align:center;" min="1" max="20" value="${it.interval}" oninput="updateExtraExpense(${it.id}, 'interval', this.value)" />
-            <span style="font-size:11px; color:var(--text-muted);">年</span>
+          <div class="expense-row-bottom">
+            <div style="display:flex; align-items:center; gap:4px; min-width:0;">
+              <span style="font-size:11.5px; color:var(--text-secondary); white-space:nowrap;">金額</span>
+              <input type="number" class="input-box" style="padding:4px 6px; font-size:12.5px; text-align:right;" value="${it.amount}" step="10000" oninput="updateExtraExpense(${it.id}, 'amount', this.value)" />
+              <span style="font-size:11.5px; color:var(--text-muted);">元</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:4px; min-width:0;">
+              <span style="font-size:11.5px; color:var(--text-secondary); white-space:nowrap;">頻率 每</span>
+              <input type="number" class="input-box" style="padding:4px 6px; font-size:12.5px; text-align:center;" min="1" max="20" value="${it.interval}" oninput="updateExtraExpense(${it.id}, 'interval', this.value)" />
+              <span style="font-size:11.5px; color:var(--text-muted);">年</span>
+            </div>
           </div>
-          <button class="remove-btn" style="width:24px; height:24px; line-height:22px; font-size:12px;" onclick="removeExtraExpense(${it.id})" title="刪除項目">×</button>
         </div>
       `).join("");
     }
@@ -4525,15 +4706,15 @@
 
       renderFrame(null);
 
-      canvas.onmousemove = (e) => {
+      function handlePointerAtClientX(clientX) {
         const b = canvas.getBoundingClientRect();
-        const mx = e.clientX - b.left;
+        const mx = clientX - b.left;
         if (mx < pad.left || mx > W - pad.right) {
           tooltip.style.display = "none";
           renderFrame(null);
           return;
         }
-        const ratio = (mx - pad.left) / plotW;
+        const ratio = (mx - pad.left) / Math.max(1, plotW);
         const idx = Math.min(xLabels.length - 1, Math.max(0, Math.round(ratio * (xLabels.length - 1))));
         renderFrame(idx);
 
@@ -4541,18 +4722,28 @@
         datasets.forEach(ds => {
           const v = ds.data[idx];
           const valTxt = (v === null || v === undefined) ? '<span style="color:#94a3b8;">尚未上市/未起算</span>' : fmtTWD(v);
-          html += `<div style="display:flex; justify-content:space-between; gap:12px;">
+          html += `<div style="display:flex; justify-content:space-between; gap:10px;">
             <span style="color:${ds.color};">● ${ds.name}</span>
             <strong>${valTxt}</strong>
           </div>`;
         });
         tooltip.innerHTML = html;
         tooltip.style.display = "block";
-        const leftPos = (mx + 240 > W) ? (mx - 235) : (mx + 14);
+        const tipW = Math.min(230, W - 16);
+        tooltip.style.maxWidth = tipW + "px";
+        let leftPos = (mx + tipW + 16 > W) ? (mx - tipW - 10) : (mx + 12);
+        leftPos = Math.max(8, Math.min(W - tipW - 8, leftPos));
         tooltip.style.left = leftPos + "px";
-        tooltip.style.top = "28px";
-      };
+        tooltip.style.top = "20px";
+      }
 
+      canvas.onmousemove = (e) => handlePointerAtClientX(e.clientX);
+      canvas.ontouchstart = (e) => {
+        if (e.touches && e.touches.length > 0) handlePointerAtClientX(e.touches[0].clientX);
+      };
+      canvas.ontouchmove = (e) => {
+        if (e.touches && e.touches.length > 0) handlePointerAtClientX(e.touches[0].clientX);
+      };
       canvas.onmouseleave = () => {
         tooltip.style.display = "none";
         renderFrame(null);
@@ -4574,7 +4765,6 @@
       runLoanSim();
     });
   </script>
-
 <script src="./static_monthly_db.js"></script>
 <script>
 (function() {
@@ -4862,4 +5052,6 @@
 </script>
 
 </body>
+</html>
+
 </html>
