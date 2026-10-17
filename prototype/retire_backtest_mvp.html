@@ -4121,7 +4121,7 @@
 
     let _monthlyBacktestTimer = null;
     function triggerMonthlyBacktestDebounced() {
-      if (typeof window === "undefined" || !window.location || !window.location.protocol.startsWith("http")) return;
+      if (typeof window === "undefined") return;
       clearTimeout(_monthlyBacktestTimer);
       _monthlyBacktestTimer = setTimeout(async () => {
         try {
@@ -4248,9 +4248,15 @@
           const pItem = selectedPortfolio.find(p => p.ticker === ticker);
           const wPct = pItem ? (pItem.weight * 100).toFixed(1) + "%" : "--";
 
+          const shInfo = s.share_stats
+            ? `<div style="font-size:11px; color:#475569; margin-top:2px;">📦 股數：本金買進 ${fmtNum(s.share_stats.bought_shares)} 股` +
+              (s.share_stats.stock_div_shares > 0 ? `｜<span style="color:#1d4ed8; font-weight:600;">配股/拆股 +${fmtNum(s.share_stats.stock_div_shares)} 股</span>` : ``) +
+              (s.share_stats.drip_shares > 0 ? `｜<span style="color:#059669; font-weight:600;">配息再投入 +${fmtNum(s.share_stats.drip_shares)} 股</span>` : ``) +
+              ` ➔ 期末 <strong>${fmtNum(s.share_stats.final_shares)} 股</strong></div>`
+            : "";
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td><strong>${ticker}</strong> ${meta.name}</td>
+            <td><strong>${ticker}</strong> ${meta.name}${shInfo}</td>
             <td><span class="badge badge-blue">${s.start_month}–${s.end_month} (${s.total_months}月)</span></td>
             <td>${wPct}</td>
             <td>${fmtTWD(s.total_principal)}</td>
